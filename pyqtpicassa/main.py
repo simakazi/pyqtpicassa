@@ -72,27 +72,49 @@ class UploadImageThread(QtCore.QThread):
 class MainWindow(QtGui.QWidget):
     def __init__(self,gd_client,parent=None):   
         QtGui.QWidget.__init__(self,parent)
-        vl = QtGui.QVBoxLayout()
-        self.setLayout(vl)
+        vl = QtGui.QVBoxLayout(self)
+        
+        
+        hl = QtGui.QHBoxLayout()        
         self.combo = QtGui.QComboBox(self)
-        vl.addWidget(self.combo)
-        self.w = QtGui.QWidget()
-        self.grid = QtGui.QHBoxLayout()
+        self.newAlbum = QtGui.QPushButton(self)
+        self.newAlbum.setText('New album')
+        hl.addWidget(self.combo)
+        hl.addWidget(self.newAlbum)
+        self.newAlbum.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+        
+        vl.addLayout(hl)
+        self.w = QtGui.QWidget(self)
+        self.grid = QtGui.QHBoxLayout(self.w)
         self.grid.setSizeConstraint(QtGui.QLayout.SetMinAndMaxSize)
-        self.slider = QtGui.QScrollArea()
-        self.slider.setWidget(self.w)
-        self.w.setLayout(self.grid)
+        self.slider = QtGui.QScrollArea(self)
+        self.slider.setWidget(self.w)        
         vl.addWidget(self.slider)
-        self.gd_client = gd_client
-        self.combo.currentIndexChanged.connect(self.__load_photos__)
+        self.gd_client = gd_client        
         self.__load_albums__()        
         self.__load_photos__()
         self.w.setMinimumSize(QtCore.QSize(100,100))
         self.w.setMaximumSize(QtCore.QSize(100,100))        
         self.setAcceptDrops(True)
-        self.status = QtGui.QLabel()
+        self.status = QtGui.QLabel(self)
+        self.setMinimumSize(QtCore.QSize(300,300))
         vl.addWidget(self.status)
         
+        self.combo.currentIndexChanged.connect(self.__load_photos__)
+        self.newAlbum.clicked.connect(self.__create_album__)
+        
+    def __create_album__(self):        
+        name = QtGui.QInputDialog.getText(self, "Please, enter new album name","Album name", QtGui.QLineEdit.Normal,"New album")
+        if name[1] and name[0]!="":            
+            album = self.gd_client.InsertAlbum(title=str(name[0]),summary='')
+            self.combo.insertItem(0,self.tr(album.title.text)+"("+self.tr(album.numphotos.text)+")",album.gphoto_id.text)        
+            self.combo.setCurrentIndex(0)
+           
+            #while self.combo.count():
+            #    self.combo.removeItem(0)
+            #self.__load_albums__()
+            
+    
     def add_photo(self,photo):               
         slide=Slide(photo)       
         self.connect(slide,QtCore.SIGNAL('deleteMe(QWidget*)'),self,QtCore.SLOT('deleteSlide(QWidget*)'))
@@ -141,11 +163,12 @@ class MainWindow(QtGui.QWidget):
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
             slide=self.childAt(event.pos())
-            if slide.photo:
+            if isinstance(slide,Slide):
                 drag = QtGui.QDrag(self)
                 mimeData = QtCore.QMimeData()
                 #mimeData.setText(slide.photo.content.src);
-                
+                mimeData.setUrls([QtCore.QUrl(slide.photo.content.src)]);
+                """
                 f=urllib2.urlopen(slide.photo.content.src)
                 content=f.read()
                 f.close()
@@ -155,11 +178,12 @@ class MainWindow(QtGui.QWidget):
                 image.loadFromData(array)
                 pixmap=QtGui.QPixmap.fromImage(image)
                 mimeData.setImageData(pixmap)                        
+                """
                 drag.setMimeData(mimeData);
                 drag.setPixmap(slide.pixmap())
-                dropAction = drag.exec_()
-    def dragEnterEvent(self,event):
-        #if (event.mimeData().hasImage())
+                dropAction = drag.exec_()        
+    
+    def dragEnterEvent(self,event):        
         if event.mimeData().hasFormat("text/plain"):
             event.acceptProposedAction()
             
