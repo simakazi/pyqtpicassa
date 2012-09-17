@@ -72,6 +72,7 @@ class UploadImageThread(QtCore.QThread):
 class MainWindow(QtGui.QWidget):
     def __init__(self,gd_client,parent=None):   
         QtGui.QWidget.__init__(self,parent)
+	self.setWindowTitle('PyQtPicassa - '+gd_client.email)
         vl = QtGui.QVBoxLayout(self)
         
         
@@ -201,6 +202,7 @@ class MainWindow(QtGui.QWidget):
 class AuthorizeWindow(QtGui.QDialog):
     def __init__(self,parent=None):
         QtGui.QDialog.__init__(self,parent)
+	self.setWindowTitle('PyQtPicassa')
         fl = QtGui.QFormLayout()
         lbl=QtGui.QLabel("Please, log in with your Google Account")
         fl.addRow(lbl)
